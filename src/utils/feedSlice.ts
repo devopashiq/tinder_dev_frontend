@@ -11,7 +11,7 @@ export const feedSlice = createSlice({
     initialState,
 
     reducers:{
-        setFeed:(state,action:PayloadAction<UserSliceState>)=>{
+        setFeed:(_state,action:PayloadAction<UserSliceState>)=>{
             return action.payload
         },
         removeFeed:(state,action:PayloadAction<string>)=>{

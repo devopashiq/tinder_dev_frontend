@@ -10,7 +10,7 @@ export const  connectionSlice = createSlice({
     name:'connection',
     initialState,
     reducers:{
-        addConnection:(state,action)=>{
+        addConnection:(_state,action)=>{
           return  action.payload
         },
         removeConnection:()=>{

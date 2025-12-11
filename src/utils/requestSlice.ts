@@ -25,7 +25,7 @@ export const requestSlice = createSlice({
     name:'request',
     initialState,
     reducers:{
-        addRequest:(state,action:PayloadAction<UserSliceState>)=>{return action.payload},
+        addRequest:(_state,action:PayloadAction<UserSliceState>)=>{return action.payload},
         removeRequest:(state,action:PayloadAction<string>)=>{
         if (!state) return state;
         return state?.filter((request)=>request._id!==action.payload)
