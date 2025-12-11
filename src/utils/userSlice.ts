@@ -18,7 +18,7 @@ export const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    addUser: (state, action: PayloadAction<UserState>) => {
+    addUser: (_state, action: PayloadAction<UserState>) => {
       return action.payload; // ✅ returns UserState (valid)
     },
     removeUser: () => {
