@@ -3,7 +3,7 @@ import Navbar from "../components/NavBar";
 import Footer from "../components/Footer";
 import { useEffect } from "react";
 
-function AuthLayouts() {
+function MainLayouts() {
   
 
   useEffect(()=>{
@@ -12,15 +12,19 @@ function AuthLayouts() {
 
 
   return (
-    <>
-     <Navbar></Navbar>
-   
-      <Outlet />
-      <Footer></Footer>
-    </>
+  <div className="min-h-screen flex flex-col">
+      <Navbar />
+
+      {/* Main content grows and pushes footer down */}
+      <main className="flex-1">
+        <Outlet />
+      </main>
+
+      <Footer />
+    </div>
    
 
   );
 } 
 
-export default AuthLayouts;
+export default MainLayouts;

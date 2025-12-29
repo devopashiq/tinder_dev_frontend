@@ -4,15 +4,14 @@ import { BASE_URL } from "../utils/constans";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../utils/store";
 import { addConnection } from "../utils/connectionSlice";
+import { Link } from "react-router-dom";
 
 export default function Connection() {
   const connection = useSelector((state: RootState) => state.connection);
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    async function fetchConnection() {
+      async function fetchConnection() {
       try {
-        if (connection) return;
+       
 
         const res = await axios.get(`${BASE_URL}/user/connection`, {
           withCredentials: true,
@@ -24,8 +23,11 @@ export default function Connection() {
       }
     }
 
+  useEffect(() => {
+
+
     fetchConnection();
-  }, []);
+  }, [dispatch]);
 
   if (!connection || connection.length === 0)
     return (
@@ -38,13 +40,14 @@ export default function Connection() {
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold text-center mb-6">Your Connections</h1>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 ">
         {connection.map((item) => (
           <div
             key={item._id}
-            className="flex items-center gap-4 bg-base-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+            className="flex justify-between items-center bg-base-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow"
           >
-            <img
+            <div className="flex items-center gap-4">
+                 <img
               src={item.photoUrl}
               alt={`${item.firstName}'s profile`}
               className="w-20 h-20 rounded-full object-cover border"
@@ -61,7 +64,20 @@ export default function Connection() {
 
               <p className="text-sm">{item.about}</p>
             </div>
+
+            </div>
+            <div>
+              <Link to={"/chat/" + item._id}>
+                <button className="btn btn-primary btn-sm">Message</button>
+              </Link>
+          
+            </div>
+         
+
+
+
           </div>
+          
         ))}
       </div>
     </div>

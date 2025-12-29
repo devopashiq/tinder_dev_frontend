@@ -18,7 +18,7 @@ function Profile() {
     lastName: user?.lastName,
     about: user?.about,
 
-    age: user?.age,
+     age: user?.age?.toString() || "",
 
     gender: user?.gender,
   });
@@ -145,7 +145,7 @@ function Profile() {
               min={18}
               value={formData?.age}
               onChange={(e) =>
-                setFormData({ ...formData, age: Number(e.target.value) })
+                setFormData({ ...formData, age: e.target.value })
               }
             />
           </fieldset>

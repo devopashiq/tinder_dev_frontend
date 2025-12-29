@@ -6,7 +6,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
   lastName: string,
   photoUrl: string,
   gender: string,
-  age: number,
+  age: string,
   about:string
 }
 
