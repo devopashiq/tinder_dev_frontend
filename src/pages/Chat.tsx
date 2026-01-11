@@ -1,29 +1,43 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 
-import {  useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { createSocketConnection } from "../utils/socket";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../utils/store";
 import type { Socket } from "socket.io-client";
+import axios from "axios";
+import { BASE_URL } from "../utils/constans";
+import type { UserState } from "../utils/userSlice";
 
 interface chatMessage {
   userId: string;
-  targetUserId: string;
+
   username: string;
-  newmessages: string;
+  text: string;
+}
+
+interface Sender {
+  _id:string;
+  firstName:string;
+  lastName:string;
+}
+
+
+interface ServerChatMessage{
+  text:string;
+  senderId:Sender
 }
 
 const Chat = () => {
   const { targetUserId } = useParams();
   const [messages, setMessages] = useState<chatMessage[]>([]);
   const [newmessages, setNewMessages] = useState("");
+  const  [currentChatingUser, setCurrentChatingUser] = useState<Partial<UserState>>({});
   const user = useSelector((state: RootState) => state.user);
-  const connection = useSelector((state: RootState) => state.connection);
-  const targetUser = connection?.find((user) => user._id === targetUserId);
-   
+
 
   const userId = user?._id;
 
@@ -41,20 +55,62 @@ const Chat = () => {
     setNewMessages("");
   };
 
+  const fetchAllChat = async () => {
+    try {
+      const res = await axios.get(BASE_URL + `/chat/${targetUserId}`, {
+        withCredentials: true,
+      });
 
+      console.log(res?.data?.message);
+
+      const messages :ServerChatMessage[] = res?.data?.message;
+      if (messages.length > 0) {
+        const chatMassages  = messages.map((msg) => {
+          const { firstName, lastName, _id } = msg?.senderId || {};
+          return {
+            userId: _id,
+            username: `${firstName} ${lastName}`,
+            text: msg?.text,
+          };
+        });
+
+        setMessages(chatMassages);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const fetchTargetUserDetails  = async()=>{
+     try{
+      const  res = await axios.get(BASE_URL +`/user/${targetUserId}`,{
+        withCredentials:true
+      })
+
+
+
+      setCurrentChatingUser(res?.data);
+      
+
+     }catch(err){
+      console.log(err);
+      
+
+     }
+  }
+  useEffect(() => {
+    fetchTargetUserDetails()
+    fetchAllChat();
+  }, []);
 
   useEffect(() => {
-  
-    
     if (!userId || !targetUserId) return;
-
-   
 
     socketRef.current = createSocketConnection();
     socketRef.current?.emit("joinChat", {
       userId,
       targetUserId,
-      username: user?.firstName,
+      username: `${user?.firstName} ${user?.lastName}`,
     });
 
     socketRef.current?.on("chatMessage", (msg) => {
@@ -76,15 +132,17 @@ const Chat = () => {
           <div className="w-10 rounded-full ">
             <img
               alt="Tailwind CSS chat bubble component"
-              src={targetUser?.photoUrl || "/placeholder.jpg"}
+              src={ currentChatingUser?.photoUrl ||"/placeholder.jpg"}
             />
           </div>
         </div>
 
-        <h1 className=" font-extrabold text-lg ">{targetUser?.firstName + " " + targetUser?.lastName || ""}</h1>
+        <h1 className=" font-extrabold text-lg ">
+          {currentChatingUser?.firstName} {currentChatingUser?.lastName}
+        </h1>
       </div>
       <div className="p-2 flex-1 overflow-y-auto ">
-        {messages.map((item,index) => {
+        {messages.map((item, index) => {
           const isMine = item?.userId === userId;
           return isMine ? (
             <div className="chat chat-end" key={index}>
@@ -92,18 +150,18 @@ const Chat = () => {
                 <time className="text-xs opacity-0  group-hover:opacity-50">
                   12:46
                 </time>
-                <div className="chat-bubble ">{item?.newmessages}</div>
+                <div className="chat-bubble ">{item?.text}</div>
               </div>
 
               <div className="chat-footer opacity-50">Seen at 12:46</div>
             </div>
           ) : (
-             <div className="chat chat-start" key={index}>
+            <div className="chat chat-start" key={index}>
               <div className="chat-image avatar">
                 <div className="w-10 rounded-full">
                   <img
                     alt="Tailwind CSS chat bubble component"
-                    src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
+                    src={currentChatingUser?.photoUrl}
                   />
                 </div>
               </div>
@@ -111,7 +169,7 @@ const Chat = () => {
                 {item?.username}
                 <time className="text-xs opacity-50">12:45</time>
               </div>
-              <div className="chat-bubble">{item?.newmessages}</div>
+              <div className="chat-bubble">{item?.text}</div>
               <div className="chat-footer opacity-50">Delivered</div>
             </div>
           );
