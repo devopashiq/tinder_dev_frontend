@@ -10,10 +10,13 @@ import Feed from "./pages/Feed";
 import Connection from "./pages/Connection";
 import Request from "./pages/Request";
 import Chat from "./pages/Chat";
+import Premium from "./pages/Premium";
 
 function App() {
   return (
+
     <BrowserRouter>
+        
       <Routes>
         <Route path="/home" element={<AuthLayouts />} />
 
@@ -29,6 +32,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/connections" element={<Connection />} />
           <Route path="/requests" element={<Request />} />
+          <Route path="/premium" element={<Premium />} />
+          <Route path="/chat/:targetUserId" element={<Chat />} />
           <Route path="/chat/:targetUserId" element={<Chat />} />
         </Route>
       </Routes>

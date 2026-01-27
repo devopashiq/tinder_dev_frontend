@@ -141,7 +141,7 @@ const Chat = () => {
           {currentChatingUser?.firstName} {currentChatingUser?.lastName}
         </h1>
       </div>
-      <div className="p-2 flex-1 overflow-y-auto ">
+      <div className="p-2 flex-1 overflow-y-auto max-h-[60vh] ">
         {messages.map((item, index) => {
           const isMine = item?.userId === userId;
           return isMine ? (

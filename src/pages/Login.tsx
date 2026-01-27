@@ -50,7 +50,17 @@ const result = await axios.post(BASE_URL + "/login", formData, {
       });
       console.log(result.data);
 
-      alert("Login successful!");
+     toast.success('Login successful', {
+position: "top-right",
+autoClose: 5000,
+hideProgressBar: false,
+closeOnClick: false,
+pauseOnHover: true,
+draggable: true,
+progress: undefined,
+theme: "light",
+transition: Bounce,
+})
 
       localStorage.setItem("token", "true");
       dispatch(
@@ -235,14 +245,14 @@ transition: Bounce,
           </div>
 
           {/* Forgot Password */}
-          <div className="text-right">
+         {isLogin && <div className="text-right">
             <a
               href="#"
               className="text-sm text-pink-600 hover:underline hover:text-pink-700"
             >
               Forgot password?
             </a>
-          </div>
+          </div>}
 
           {/* Submit Button */}
           <button

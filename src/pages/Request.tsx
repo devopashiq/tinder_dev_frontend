@@ -33,7 +33,7 @@ export default function Request() {
   useEffect(() => {
     async function fetchRequest() {
       try {
-        if (request) return;
+       
 
         const res = await axios.get(`${BASE_URL}/user/request/received`, {
           withCredentials: true,
@@ -47,7 +47,8 @@ export default function Request() {
     }
 
     fetchRequest();
-  }, [handleRequest]);
+  }, []);
+
 
   if (!request || request?.length === 0)
     return (

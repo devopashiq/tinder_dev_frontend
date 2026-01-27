@@ -76,6 +76,15 @@ useEffect(() => {
 
           <Link to={'/Profile'}>Profile</Link>
         </li>
+        <li>
+
+          <Link to={'/'}>Feed</Link>
+        </li>
+        
+        <li>
+
+          <Link to={'/premium'}>Premium</Link>
+        </li>
         
        
         <li> <Link to={'/connections'}>Connections</Link></li>
