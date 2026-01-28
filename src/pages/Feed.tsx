@@ -30,7 +30,7 @@ function Feed() {
 
   async function fetchFeed() {
     try {
-      const res = await axios.get(BASE_URL + "/feed", {
+      const res = await axios.get(BASE_URL + "user/feed", {
         withCredentials: true,
       });
 
