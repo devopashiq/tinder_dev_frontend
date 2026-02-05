@@ -61,7 +61,9 @@ const Chat = () => {
     }
   }
   const sendChat = () => {
-    console.log("hi  ");
+    console.log('sugamm lle');
+    
+  
 
     if (!newmessages.trim()) return;
     socketRef.current?.emit("sendMessage", {
@@ -80,7 +82,6 @@ const Chat = () => {
         withCredentials: true,
       });
 
-      console.log(res?.data?.message);
 
       const messages: ServerChatMessage[] = res?.data?.message;
       if (messages.length > 0) {
@@ -96,7 +97,6 @@ const Chat = () => {
           };
         });
 
-        console.log(chatMassages);
 
         setMessages(chatMassages);
       }
@@ -111,7 +111,7 @@ const Chat = () => {
         withCredentials: true,
       });
 
-      console.log(res?.data?.lastSeen);
+      
       setLastSeen(res?.data?.lastSeen);
     } catch (err) {
       console.log(err);
@@ -142,14 +142,40 @@ const Chat = () => {
     socketRef.current = socket;
 
     socket.on("online-users", (users) => {
-      console.log(users);
+   
 
       if (users.includes(targetUserId)) {
         setIsOnline(true);
+        setMessages((prev) => {
+          const updateMsgStatus = prev.map((msg) => {
+            if (msg.userId === userId && msg.status !== "seen") {
+              return { ...msg, status: "delivered" };
+            }
+            return msg;
+          });
+          return updateMsgStatus;
+        });
       } else {
         setIsOnline(false);
+        setLastSeen(new Date().toISOString());
       }
     });
+    socket.on("userjoined", (id) => {
+      console.log(id);
+
+      if (id === targetUserId) {
+        setMessages((prev) => {
+          const updateMsgStatus = prev.map((msg) => {
+            if (msg.userId === userId) {
+              return { ...msg, status: "seen" };
+            }
+            return msg;
+          });
+          return updateMsgStatus;
+        });
+      }
+    });
+ 
     socket.on("connect", () => {
       console.log("FRONTEND CONNECTED:", socket.id);
 
@@ -159,26 +185,19 @@ const Chat = () => {
         targetUserId,
         username: `${user?.firstName} ${user?.lastName}`,
       });
-    });
+    });      
 
-    // socketRef.current?.on("user-online", (id) => {
-    //   console.log("logined user id", id);
-    //   if (id === targetUserId) {
-    //     setIsOnline(true);
-    //   }
-    // });
-    console.log("h");
-
-    console.log("hbbbb");
+   
 
     socket.on("chatMessage", (msg) => {
-      console.log("dddd");
-
-      console.log(msg);
+      console.log("Listing on senting msg",msg);
+      
+   
 
       setMessages((prev) => {
         const updated = [...prev, msg];
-        console.log(updated);
+       console.log(updated,"checking the sented meg");
+       
         return updated;
       });
     });
@@ -186,7 +205,7 @@ const Chat = () => {
     return () => {
       socket.off("chatMessage");
       socket.off("online-users");
-
+      socket.off("userjoined");
       socketRef.current?.disconnect();
     };
   }, [userId, targetUserId]);
@@ -225,7 +244,11 @@ const Chat = () => {
 
             {/* Online / Last seen */}
             <span className="text-sm text-gray-400">
-              {isOnline ? "Online" : `Last seen: ${dayjs(lastSeen).fromNow()}`}
+              {isOnline
+                ? "Online"
+                : lastSeen
+                  ? `Last seen: ${dayjs(lastSeen).fromNow()}`
+                  : "Last seen: unknown"}
             </span>
           </div>
         </div>
@@ -260,10 +283,10 @@ const Chat = () => {
               </div>
               <div className="chat-header">
                 {item?.username}
-                <time className="text-xs opacity-50">12:45</time>
+                <time className="text-xs opacity-50">{dayjs(item?.createdAt).format("h:mm A")}</time>
               </div>
               <div className="chat-bubble">{item?.text}</div>
-              <div className="chat-footer opacity-50">Delivered</div>
+            
             </div>
           );
         })}
