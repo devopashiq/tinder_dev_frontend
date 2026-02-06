@@ -122,7 +122,7 @@ useEffect(() => {
   <div className="flex items-center justify-between">
 
     <a className="text-xl font-bold text-white">
-      devTinder
+      DevTinder
     </a>
 
     <button
@@ -234,7 +234,7 @@ useEffect(() => {
 
     <div className="space-y-4">
       <h3 className="text-3xl font-bold bg-linear-to-r from-pink-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-        DevBond
+        DevTinder
       </h3>
       <p className="text-gray-400 text-sm leading-relaxed">
         Find your perfect dev partner.  
