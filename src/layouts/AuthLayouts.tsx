@@ -278,7 +278,7 @@ useEffect(() => {
 
  
   <div className="mt-16 border-t border-white/10 pt-6 text-center text-gray-500 text-sm">
-    © {new Date().getFullYear()} DevBond. All rights reserved.
+    © {new Date().getFullYear()} DevTinder. All rights reserved.
   </div>
 
 </footer>

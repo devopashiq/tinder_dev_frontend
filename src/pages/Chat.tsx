@@ -16,7 +16,6 @@ import type { UserState } from "../utils/userSlice";
 interface chatMessage {
   userId: string;
 
-  username: string;
   text: string;
   seenAt: Date;
   createdAt: Date;
@@ -47,11 +46,17 @@ const Chat = () => {
   const [currentChatingUser, setCurrentChatingUser] = useState<
     Partial<UserState>
   >({});
+
+  const [typingStatus, setTypingStatus] = useState<boolean>(false);
+
   const user = useSelector((state: RootState) => state.user);
 
   const userId = user?._id;
 
   const socketRef = useRef<Socket | null>(null);
+  const typingTimeOutRef=useRef<any | null>(null);
+  const typingIndicatorTimeoutRef=useRef<any | null>(null);
+  
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   function scrollToBottom() {
@@ -61,10 +66,6 @@ const Chat = () => {
     }
   }
   const sendChat = () => {
-    console.log('sugamm lle');
-    
-  
-
     if (!newmessages.trim()) return;
     socketRef.current?.emit("sendMessage", {
       userId,
@@ -82,7 +83,6 @@ const Chat = () => {
         withCredentials: true,
       });
 
-
       const messages: ServerChatMessage[] = res?.data?.message;
       if (messages.length > 0) {
         const chatMassages = messages.map((msg) => {
@@ -97,7 +97,6 @@ const Chat = () => {
           };
         });
 
-
         setMessages(chatMassages);
       }
     } catch (err) {
@@ -111,7 +110,6 @@ const Chat = () => {
         withCredentials: true,
       });
 
-      
       setLastSeen(res?.data?.lastSeen);
     } catch (err) {
       console.log(err);
@@ -129,6 +127,43 @@ const Chat = () => {
       console.log(err);
     }
   };
+
+  const emitUserTypingEvent = () => {
+
+
+    if(typingTimeOutRef.current===null){
+        socketRef.current?.emit("UserTyping", {
+      typing: true,
+      targetUserId,
+    });
+
+     typingTimeOutRef.current= setTimeout(()=>{
+        typingTimeOutRef.current=null
+        
+    },2000)
+
+
+    }
+
+   
+      
+
+
+      
+      
+
+  
+
+
+
+  
+  };
+
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessages(e.target.value);
+    emitUserTypingEvent();
+  };
+
   useEffect(() => {
     if (!targetUserId) return;
     fetchTargetUserDetails();
@@ -142,8 +177,6 @@ const Chat = () => {
     socketRef.current = socket;
 
     socket.on("online-users", (users) => {
-   
-
       if (users.includes(targetUserId)) {
         setIsOnline(true);
         setMessages((prev) => {
@@ -157,7 +190,8 @@ const Chat = () => {
         });
       } else {
         setIsOnline(false);
-        setLastSeen(new Date().toISOString());
+        // setLastSeen(new Date().toISOString());
+        fetchLastSeen();
       }
     });
     socket.on("userjoined", (id) => {
@@ -175,31 +209,37 @@ const Chat = () => {
         });
       }
     });
- 
+
     socket.on("connect", () => {
-      console.log("FRONTEND CONNECTED:", socket.id);
-
-      console.log("EMITTING joinChat");
       socket.emit("joinChat", {
-        userId,
         targetUserId,
-        username: `${user?.firstName} ${user?.lastName}`,
       });
-    });      
-
-   
+    });
 
     socket.on("chatMessage", (msg) => {
-      console.log("Listing on senting msg",msg);
-      
-   
+      const normalizedMsg: chatMessage = {
+        userId: msg?.userId,
 
-      setMessages((prev) => {
-        const updated = [...prev, msg];
-       console.log(updated,"checking the sented meg");
-       
-        return updated;
-      });
+        text: msg?.text,
+        seenAt: msg?.seenAt ?? null,
+        createdAt: msg?.createdAt ?? null,
+        status: msg?.status ?? "sent",
+      };
+
+      setMessages((prev) => [...prev, normalizedMsg]);
+    });
+
+    socket.on("typing", () => {
+      setTypingStatus(true);
+
+      if (typingIndicatorTimeoutRef.current) {
+        clearTimeout(typingIndicatorTimeoutRef.current);
+      }
+
+      typingIndicatorTimeoutRef.current = setTimeout(() => {
+        setTypingStatus(false);
+      }, 2000);
+      
     });
 
     return () => {
@@ -212,7 +252,15 @@ const Chat = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+
+
+    return () => {
+      if (typingTimeOutRef.current) {
+        clearTimeout(typingTimeOutRef.current);
+        
+      }
+    };
+  }, [messages, typingStatus]);
 
   return (
     <div className="max-w-4xl m-auto border border-gray-50  flex flex-col min-h-[70vh]">
@@ -282,14 +330,23 @@ const Chat = () => {
                 </div>
               </div>
               <div className="chat-header">
-                {item?.username}
-                <time className="text-xs opacity-50">{dayjs(item?.createdAt).format("h:mm A")}</time>
+                {currentChatingUser?.firstName} {currentChatingUser?.lastName}
+                <time className="text-xs opacity-50">
+                  {dayjs(item?.createdAt).format("h:mm A")}
+                </time>
               </div>
               <div className="chat-bubble">{item?.text}</div>
-            
             </div>
           );
         })}
+
+        {typingStatus && (
+          <div className="chat chat-start">
+            <div className="chat-bubble ">
+              <span className="loading loading-dots loading-xs"></span>
+            </div>
+          </div>
+        )}
       </div>
       <div className="p-5 border-t border-gray-500/50 ">
         <div className="relative">
@@ -298,7 +355,7 @@ const Chat = () => {
             placeholder="Accent"
             className="input input-accent w-full pr-10"
             value={newmessages}
-            onChange={(e) => setNewMessages(e.target.value)}
+            onChange={(e) => handleChatInputChange(e)}
           />
           <FontAwesomeIcon
             title="send"
