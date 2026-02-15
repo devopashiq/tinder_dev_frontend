@@ -5,13 +5,14 @@ import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
 import { createSocketConnection } from "../utils/socket";
-import { useParams } from "react-router-dom";
+import { Router, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../utils/store";
 import type { Socket } from "socket.io-client";
 import axios from "axios";
 import { BASE_URL } from "../utils/constans";
 import type { UserState } from "../utils/userSlice";
+import { toast } from "react-toastify";
 
 interface chatMessage {
   userId: string;
@@ -39,6 +40,7 @@ interface ServerChatMessage {
 dayjs.extend(relativeTime);
 const Chat = () => {
   const { targetUserId } = useParams();
+    const navigate = useNavigate();
   const [messages, setMessages] = useState<chatMessage[]>([]);
   const [newmessages, setNewMessages] = useState("");
   const [lastSeen, setLastSeen] = useState<string>("");
@@ -54,9 +56,9 @@ const Chat = () => {
   const userId = user?._id;
 
   const socketRef = useRef<Socket | null>(null);
-  const typingTimeOutRef=useRef<any | null>(null);
-  const typingIndicatorTimeoutRef=useRef<any | null>(null);
-  
+  const typingTimeOutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ 
+
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   function scrollToBottom() {
@@ -100,6 +102,9 @@ const Chat = () => {
         setMessages(chatMassages);
       }
     } catch (err) {
+      const errorMSg = (err as any)?.response?.data?.message || "Failed to load chat messages";
+      toast.error(errorMSg);
+       navigate("/connections");
       console.log(err);
     }
   };
@@ -129,34 +134,27 @@ const Chat = () => {
   };
 
   const emitUserTypingEvent = () => {
+    if (typingTimeOutRef.current === null) {
+      socketRef.current?.emit("UserTyping", {
+        typing: true,
+        targetUserId,
+      });
 
-
-    if(typingTimeOutRef.current===null){
-        socketRef.current?.emit("UserTyping", {
-      typing: true,
-      targetUserId,
-    });
-
-     typingTimeOutRef.current= setTimeout(()=>{
-        typingTimeOutRef.current=null
-        
-    },2000)
-
-
+     
     }
 
-   
-      
 
+     if (typingTimeOutRef.current) {
+        clearTimeout(typingTimeOutRef.current);
+      }
 
-      
-      
-
-  
-
-
-
-  
+      typingTimeOutRef.current = setTimeout(() => {
+        socketRef.current?.emit("UserTyping", {
+          typing: false,
+          targetUserId,
+        });
+        typingTimeOutRef.current = null;
+      }, 1500);
   };
 
   const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,35 +227,30 @@ const Chat = () => {
       setMessages((prev) => [...prev, normalizedMsg]);
     });
 
-    socket.on("typing", () => {
-      setTypingStatus(true);
-
-      if (typingIndicatorTimeoutRef.current) {
-        clearTimeout(typingIndicatorTimeoutRef.current);
-      }
-
-      typingIndicatorTimeoutRef.current = setTimeout(() => {
-        setTypingStatus(false);
-      }, 2000);
+    socket.on("typing", (typing) => {
+      console.log(typing);
       
+      setTypingStatus(typing);
+     
     });
 
-    return () => {
-      socket.off("chatMessage");
+    return () => {   
+      socket.off("chatMessage");   
       socket.off("online-users");
       socket.off("userjoined");
-      socketRef.current?.disconnect();
+      socket.off('typing')
+      socket.disconnect();
+      
+      socketRef.current=null
     };
   }, [userId, targetUserId]);
 
   useEffect(() => {
     scrollToBottom();
 
-
     return () => {
       if (typingTimeOutRef.current) {
         clearTimeout(typingTimeOutRef.current);
-        
       }
     };
   }, [messages, typingStatus]);
