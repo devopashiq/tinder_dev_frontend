@@ -9,10 +9,10 @@ import {
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addUser } from "../utils/userSlice";
+import { addUser, type UserState } from "../utils/userSlice";
 import { BASE_URL } from "../utils/constans";
 import type { AppDispatch } from "../utils/store";
-  import { Bounce, toast } from 'react-toastify';
+import { Bounce, toast } from "react-toastify";
 
 interface FormData {
   email: string;
@@ -40,82 +40,75 @@ function Login({ handleClose }: LoginProps) {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
 
+  function addUserToRedux(user: UserState | null | undefined) {
+    if (!user) return;
+    dispatch(
+      addUser({
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        photoUrl: user.photoUrl || "",
+        age: user.age || "",
+        gender: user.gender || "",
+        about: user.about || "",
+        isPremium: user.isPremium || false,
+        membershipType: user.membershipType || "",
+      }),
+    );
+  }
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
+      if (isLogin) {
+        const result = await axios.post(BASE_URL + "/login", formData, {
+          withCredentials: true,
+        });
+        const user = result?.data;
 
-      if(isLogin){
-const result = await axios.post(BASE_URL + "/login", formData, {
-        withCredentials: true,
-      });
-      console.log(result.data);
+        toast.success("Login successful", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
 
-     toast.success('Login successful', {
-position: "top-right",
-autoClose: 5000,
-hideProgressBar: false,
-closeOnClick: false,
-pauseOnHover: true,
-draggable: true,
-progress: undefined,
-theme: "light",
-transition: Bounce,
-})
-
-      localStorage.setItem("token", "true");
-      dispatch(
-        addUser({
-          _id: result.data?._id,
-          firstName: result.data.firstName,
-          lastName: result.data.lastName,
-          photoUrl: result.data?.photoUrl,
-          age: result.data?.age,
-          gender: result?.data.gender,
-          about: result?.data.about,
-        })
-      );
-      navigate("/");
-      }else{
+        localStorage.setItem("token", "true");
+        addUserToRedux(user);
+        handleClose();
+        navigate("/");
+      } else {
         const result = await axios.post(BASE_URL + "/signup", formData, {
-        withCredentials: true,
-      });
+          withCredentials: true,
+        });
 
-      const user=result?.data.user
+        const user = result?.data.user;
 
-      console.log(result,user);
-      
-   
-       dispatch(
-        addUser({
-          _id: user?._id,
-          firstName: user?.firstName,
-          lastName: user?.lastName,
-          photoUrl: user?.photoUrl ||'',
-          age:  user?.age || '',
-          gender: user?.gender ||'',
-          about: user?.about||'',
-        })
-      );
-          navigate("/profile");
+        console.log(result, user);
 
-
+        addUserToRedux(user);
+        handleClose();
+        navigate("/profile");
       }
-      
     } catch (err: unknown) {
       console.log(err);
       if (axios.isAxiosError(err)) {
         // alert(err?.response?.data?.err || err.message);
         toast.error(err?.response?.data?.err || err.message, {
-position: "top-right",
-autoClose: 5000,
-hideProgressBar: false,
-closeOnClick: false,
-pauseOnHover: true,
-draggable: true,
-progress: undefined,
-theme: "light",
-transition: Bounce,
-});
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
       } else if (err instanceof Error) {
         alert(err.message);
       } else {
@@ -134,7 +127,7 @@ transition: Bounce,
           <FontAwesomeIcon icon={faXmark} className="cursor-pointer" />
         </button>
         <h2 className="text-3xl font-semibold text-gray-800 text-center mb-6 ">
-        {isLogin?'Welcome Back':'Create an Account'}  
+          {isLogin ? "Welcome Back" : "Create an Account"}
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -245,29 +238,33 @@ transition: Bounce,
           </div>
 
           {/* Forgot Password */}
-         {isLogin && <div className="text-right">
-            <a
-              href="#"
-              className="text-sm text-pink-600 hover:underline hover:text-pink-700"
-            >
-              Forgot password?
-            </a>
-          </div>}
+          {isLogin && (
+            <div className="text-right">
+              <a
+                href="#"
+                className="text-sm text-pink-600 hover:underline hover:text-pink-700"
+              >
+                Forgot password?
+              </a>
+            </div>
+          )}
 
           {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2.5 rounded-lg shadow-md active:scale-95 transition-transform"
           >
-           {isLogin?'Log In': 'Sign In'}
+            {isLogin ? "Log In" : "Sign UP"}
           </button>
         </form>
 
         <p className="text-sm text-gray-500 text-center mt-6">
-          { isLogin ?'Don’t have an account? ':'Already have an account? '}
-          <button className="text-pink-600 hover:underline" onClick={()=>setIsLogin(log=>!log)}>
-            
-             { isLogin ?'Create an account':'Login'}
+          {isLogin ? "Don’t have an account? " : "Already have an account? "}
+          <button
+            className="text-pink-600 hover:underline"
+            onClick={() => setIsLogin((log) => !log)}
+          >
+            {isLogin ? "Create an account" : "Login"}
           </button>
         </p>
       </div>

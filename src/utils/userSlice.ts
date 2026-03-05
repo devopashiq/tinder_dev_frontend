@@ -8,6 +8,8 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
   gender: string,
   age: string,
   about:string
+ isPremium:boolean,
+ membershipType:string
 }
 
 type UserSliceState = UserState | null;
