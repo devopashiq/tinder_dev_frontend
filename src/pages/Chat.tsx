@@ -5,24 +5,23 @@ import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
 import { createSocketConnection } from "../utils/socket";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../utils/store";
 import type { Socket } from "socket.io-client";
 import axios from "axios";
 import { BASE_URL } from "../utils/constans";
 import type { UserState } from "../utils/userSlice";
+import { toast } from "react-toastify";
 
 interface chatMessage {
   userId: string;
 
-  username: string;
   text: string;
-  seenAt: Date;
-  createdAt: Date;
+  seenAt: Date | null;
+  createdAt: Date | null;
   status: string;
 }
-
 interface Sender {
   _id: string;
   firstName: string;
@@ -40,6 +39,7 @@ interface ServerChatMessage {
 dayjs.extend(relativeTime);
 const Chat = () => {
   const { targetUserId } = useParams();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<chatMessage[]>([]);
   const [newmessages, setNewMessages] = useState("");
   const [lastSeen, setLastSeen] = useState<string>("");
@@ -47,11 +47,16 @@ const Chat = () => {
   const [currentChatingUser, setCurrentChatingUser] = useState<
     Partial<UserState>
   >({});
+
+  const [typingStatus, setTypingStatus] = useState<boolean>(false);
+
   const user = useSelector((state: RootState) => state.user);
 
   const userId = user?._id;
 
   const socketRef = useRef<Socket | null>(null);
+  const typingTimeOutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   function scrollToBottom() {
@@ -61,10 +66,6 @@ const Chat = () => {
     }
   }
   const sendChat = () => {
-    console.log('sugamm lle');
-    
-  
-
     if (!newmessages.trim()) return;
     socketRef.current?.emit("sendMessage", {
       userId,
@@ -82,7 +83,6 @@ const Chat = () => {
         withCredentials: true,
       });
 
-
       const messages: ServerChatMessage[] = res?.data?.message;
       if (messages.length > 0) {
         const chatMassages = messages.map((msg) => {
@@ -97,11 +97,16 @@ const Chat = () => {
           };
         });
 
-
         setMessages(chatMassages);
       }
     } catch (err) {
-      console.log(err);
+      const errorMSg =
+        (err as any)?.response?.data?.message || "Failed to load chat messages";
+      toast.error(errorMSg);
+      const status = (err as any)?.response?.status;
+      if (status === 401 || status === 403 || status === 404) {
+        navigate("/connections");
+      }
     }
   };
 
@@ -111,7 +116,6 @@ const Chat = () => {
         withCredentials: true,
       });
 
-      
       setLastSeen(res?.data?.lastSeen);
     } catch (err) {
       console.log(err);
@@ -129,6 +133,33 @@ const Chat = () => {
       console.log(err);
     }
   };
+
+  const emitUserTypingEvent = () => {
+    if (typingTimeOutRef.current === null) {
+      socketRef.current?.emit("UserTyping", {
+        typing: true,
+        targetUserId,
+      });
+    }
+
+    if (typingTimeOutRef.current) {
+      clearTimeout(typingTimeOutRef.current);
+    }
+
+    typingTimeOutRef.current = setTimeout(() => {
+      socketRef.current?.emit("UserTyping", {
+        typing: false,
+        targetUserId,
+      });
+      typingTimeOutRef.current = null;
+    }, 1500);
+  };
+
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessages(e.target.value);
+    emitUserTypingEvent();
+  };
+
   useEffect(() => {
     if (!targetUserId) return;
     fetchTargetUserDetails();
@@ -142,8 +173,6 @@ const Chat = () => {
     socketRef.current = socket;
 
     socket.on("online-users", (users) => {
-   
-
       if (users.includes(targetUserId)) {
         setIsOnline(true);
         setMessages((prev) => {
@@ -157,12 +186,11 @@ const Chat = () => {
         });
       } else {
         setIsOnline(false);
-        setLastSeen(new Date().toISOString());
+
+        fetchLastSeen();
       }
     });
     socket.on("userjoined", (id) => {
-      console.log(id);
-
       if (id === targetUserId) {
         setMessages((prev) => {
           const updateMsgStatus = prev.map((msg) => {
@@ -175,44 +203,50 @@ const Chat = () => {
         });
       }
     });
- 
+
     socket.on("connect", () => {
-      console.log("FRONTEND CONNECTED:", socket.id);
-
-      console.log("EMITTING joinChat");
       socket.emit("joinChat", {
-        userId,
         targetUserId,
-        username: `${user?.firstName} ${user?.lastName}`,
       });
-    });      
-
-   
+    });
 
     socket.on("chatMessage", (msg) => {
-      console.log("Listing on senting msg",msg);
-      
-   
+      const normalizedMsg: chatMessage = {
+        userId: msg?.userId,
 
-      setMessages((prev) => {
-        const updated = [...prev, msg];
-       console.log(updated,"checking the sented meg");
-       
-        return updated;
-      });
+        text: msg?.text,
+        seenAt: msg?.seenAt ?? null,
+        createdAt: msg?.createdAt ?? null,
+        status: msg?.status ?? "sent",
+      };
+
+      setMessages((prev) => [...prev, normalizedMsg]);
+    });
+
+    socket.on("typing", (typing) => {
+      setTypingStatus(typing);
     });
 
     return () => {
       socket.off("chatMessage");
       socket.off("online-users");
       socket.off("userjoined");
-      socketRef.current?.disconnect();
+      socket.off("typing");
+      socket.disconnect();
+      socket.removeAllListeners();
+      socketRef.current = null;
     };
   }, [userId, targetUserId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+
+    return () => {
+      if (typingTimeOutRef.current) {
+        clearTimeout(typingTimeOutRef.current);
+      }
+    };
+  }, [messages, typingStatus]);
 
   return (
     <div className="max-w-4xl m-auto border border-gray-50  flex flex-col min-h-[70vh]">
@@ -282,23 +316,32 @@ const Chat = () => {
                 </div>
               </div>
               <div className="chat-header">
-                {item?.username}
-                <time className="text-xs opacity-50">{dayjs(item?.createdAt).format("h:mm A")}</time>
+                {currentChatingUser?.firstName} {currentChatingUser?.lastName}
+                <time className="text-xs opacity-50">
+                  {dayjs(item?.createdAt).format("h:mm A")}
+                </time>
               </div>
               <div className="chat-bubble">{item?.text}</div>
-            
             </div>
           );
         })}
+
+        {typingStatus && (
+          <div className="chat chat-start">
+            <div className="chat-bubble ">
+              <span className="loading loading-dots loading-xs"></span>
+            </div>
+          </div>
+        )}
       </div>
       <div className="p-5 border-t border-gray-500/50 ">
         <div className="relative">
           <input
             type="text"
-            placeholder="Accent"
+            placeholder="Type a message…"
             className="input input-accent w-full pr-10"
             value={newmessages}
-            onChange={(e) => setNewMessages(e.target.value)}
+            onChange={(e) => handleChatInputChange(e)}
           />
           <FontAwesomeIcon
             title="send"

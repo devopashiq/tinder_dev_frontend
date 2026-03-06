@@ -1,5 +1,5 @@
 import { Routes, Route, BrowserRouter } from "react-router-dom";
-  import { ToastContainer} from 'react-toastify';
+import { ToastContainer } from "react-toastify";
 import "./App.css";
 
 import Profile from "./pages/Profile";
@@ -11,12 +11,15 @@ import Connection from "./pages/Connection";
 import Request from "./pages/Request";
 import Chat from "./pages/Chat";
 import Premium from "./pages/Premium";
+import { useEffect } from "react";
 
 function App() {
+  useEffect(() => {
+    const loader = document.getElementById("globalLoader");
+    if (loader) loader.style.display = "none";
+  }, []);
   return (
-
     <BrowserRouter>
-        
       <Routes>
         <Route path="/home" element={<AuthLayouts />} />
 
