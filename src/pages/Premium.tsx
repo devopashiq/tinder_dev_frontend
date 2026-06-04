@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Check } from "lucide-react";
 import axios from "axios";
 import { BASE_URL } from "../utils/constans";

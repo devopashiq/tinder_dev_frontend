@@ -103,7 +103,7 @@ const Chat = () => {
       const errorMSg =
         (err as any)?.response?.data?.message || "Failed to load chat messages";
       toast.error(errorMSg);
-      const status = (err as any)?.response?.status;
+      // const status = (err as any)?.response?.status;
       
         navigate("/connections");
       
