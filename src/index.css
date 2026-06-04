@@ -1,9 +1,9 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* :root {
+:root {
   color-scheme: light !important;
-} */
+}
 
 
 #globalLoader {

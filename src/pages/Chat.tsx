@@ -104,9 +104,9 @@ const Chat = () => {
         (err as any)?.response?.data?.message || "Failed to load chat messages";
       toast.error(errorMSg);
       const status = (err as any)?.response?.status;
-      if (status === 401 || status === 403 || status === 404) {
+      
         navigate("/connections");
-      }
+      
     }
   };
 
@@ -300,7 +300,7 @@ const Chat = () => {
                 <time className="text-xs opacity-0  group-hover:opacity-50">
                   {dayjs(item?.createdAt).format("h:mm A")}
                 </time>
-                <div className="chat-bubble ">{item?.text}</div>
+                <div className="chat-bubble text-wrap max-w-100 wrap-break-word">{item?.text}</div>
               </div>
 
               <div className="chat-footer opacity-50">{item?.status}</div>
@@ -321,7 +321,7 @@ const Chat = () => {
                   {dayjs(item?.createdAt).format("h:mm A")}
                 </time>
               </div>
-              <div className="chat-bubble">{item?.text}</div>
+              <div className="chat-bubble text-wrap max-w-100 wrap-break-word">{item?.text}</div>
             </div>
           );
         })}

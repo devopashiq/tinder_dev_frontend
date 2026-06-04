@@ -12,6 +12,7 @@ import Request from "./pages/Request";
 import Chat from "./pages/Chat";
 import Premium from "./pages/Premium";
 import { useEffect } from "react";
+import NotFound from "./pages/NotFound";
 
 function App() {
   useEffect(() => {
@@ -39,6 +40,7 @@ function App() {
           <Route path="/chat/:targetUserId" element={<Chat />} />
           <Route path="/chat/:targetUserId" element={<Chat />} />
         </Route>
+           <Route path="*" element={<NotFound></NotFound>} />
       </Routes>
       <ToastContainer />
     </BrowserRouter>
